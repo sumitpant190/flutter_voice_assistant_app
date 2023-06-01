@@ -203,7 +203,7 @@ class _HomePageState extends State<HomePage> {
             print('initspeech');
           }
         },
-        child: Icon(Icons.mic),
+        child: speechToText.isListening ? Icon(Icons.stop) : Icon(Icons.mic),
       ),
     );
   }
