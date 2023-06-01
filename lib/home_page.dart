@@ -18,6 +18,8 @@ class _HomePageState extends State<HomePage> {
   final FlutterTts flutterTts = FlutterTts();
   String lastWords = '';
   final OpenAIServices openAIServices = OpenAIServices();
+  String? generatedContent;
+  String? generatedImageUrl;
 
   @override
   void initState() {
@@ -100,60 +102,78 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             //chat bubble
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              margin:
-                  const EdgeInsets.symmetric(horizontal: 40).copyWith(top: 30),
-              decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Pallete.borderColor,
+            Visibility(
+              visible: generatedImageUrl == null,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 40)
+                    .copyWith(top: 30),
+                decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Pallete.borderColor,
+                    ),
+                    borderRadius: BorderRadius.circular(20)
+                        .copyWith(topLeft: Radius.zero)),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    generatedContent == null
+                        ? 'Hey, what can i do for you?'
+                        : generatedContent!,
+                    style: TextStyle(
+                        color: Pallete.mainFontColor,
+                        fontSize: generatedContent == null ? 20 : 18,
+                        fontFamily: 'Cera Pro'),
                   ),
-                  borderRadius:
-                      BorderRadius.circular(20).copyWith(topLeft: Radius.zero)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text(
-                  'Hey, what can i do for you?',
-                  style: TextStyle(
-                      color: Pallete.mainFontColor,
-                      fontSize: 20,
-                      fontFamily: 'Cera Pro'),
                 ),
               ),
             ),
-            Container(
-              alignment: Alignment.centerLeft,
-              padding: EdgeInsets.all(10),
-              margin: EdgeInsets.only(top: 10, left: 22),
-              child: const Text(
-                'Here are few features',
-                style: TextStyle(
-                    fontFamily: 'Cera Pro',
-                    color: Pallete.mainFontColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
+            if (generatedImageUrl != null)
+              Padding(
+                  padding: EdgeInsets.all(10),
+                  child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.network(generatedImageUrl!))),
+            Visibility(
+              visible: generatedContent == null && generatedImageUrl == null,
+              child: Container(
+                alignment: Alignment.centerLeft,
+                padding: EdgeInsets.all(10),
+                margin: EdgeInsets.only(top: 10, left: 22),
+                child: const Text(
+                  'Here are few features',
+                  style: TextStyle(
+                      fontFamily: 'Cera Pro',
+                      color: Pallete.mainFontColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             //features list
-            Column(
-              children: [
-                FeaturesBox(
-                  color: Pallete.firstSuggestionBoxColor,
-                  descriptionText:
-                      'A smarter way to stay organized powered by ChatGPT',
-                  headerText: 'ChatGPT',
-                ),
-                FeaturesBox(
-                    headerText: 'Dall-E',
-                    color: Pallete.secondSuggestionBoxColor,
+            Visibility(
+              visible: generatedContent == null && generatedImageUrl == null,
+              child: Column(
+                children: [
+                  FeaturesBox(
+                    color: Pallete.firstSuggestionBoxColor,
                     descriptionText:
-                        'Get inspired and stay creative with your personal assistant powered by Dall-E'),
-                FeaturesBox(
-                    headerText: 'Smart Voice Assistant',
-                    color: Pallete.thirdSuggestionBoxColor,
-                    descriptionText:
-                        'Get the best of both worlds with voice assistant powered by ChatGPT and Dall-E'),
-              ],
+                        'A smarter way to stay organized powered by ChatGPT',
+                    headerText: 'ChatGPT',
+                  ),
+                  FeaturesBox(
+                      headerText: 'Dall-E',
+                      color: Pallete.secondSuggestionBoxColor,
+                      descriptionText:
+                          'Get inspired and stay creative with your personal assistant powered by Dall-E'),
+                  FeaturesBox(
+                      headerText: 'Smart Voice Assistant',
+                      color: Pallete.thirdSuggestionBoxColor,
+                      descriptionText:
+                          'Get the best of both worlds with voice assistant powered by ChatGPT and Dall-E'),
+                ],
+              ),
             )
           ],
         ),
@@ -166,10 +186,18 @@ class _HomePageState extends State<HomePage> {
             print('startlistening ');
           } else if (speechToText.isListening) {
             final speech = await openAIServices.isArtPromptAPI(lastWords);
-            await systemSpeak(speech);
+            if (speech.contains('https')) {
+              generatedImageUrl = speech;
+              generatedContent = null;
+              setState(() {});
+            } else {
+              generatedContent = speech;
+              generatedImageUrl = null;
+              setState(() {});
+              await systemSpeak(speech);
+            }
             await stopListening();
             print('stop listening');
-            print(lastWords);
           } else {
             await initSpeechToText();
             print('initspeech');
